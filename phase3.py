@@ -58,6 +58,43 @@ def search_revt(key):
 		print("Search returned no result")
 	return rec_ids
 
+def search_part(key):
+	rec_id = set()
+	end = key[:-1]+ chr(ord(key[-1])+1)
+
+	key = bytes(key,'ascii')
+	end = bytes(end,'ascii')
+
+	cur_start= rtDB.cursor()
+	cur_end= rtDB.cursor()
+	result = cur_start.set_range(key)
+	print("start:",result)
+
+	last = cur_end.set_range(end)
+	print("end:",last)
+
+	while(result!=last):
+		rec_id.add(result[1])
+		result = cur_start.next()
+	print(rec_id)
+		
+"""
+	for i in range(0,4):
+		result = cur_start.next()
+		if(result == last):
+			break
+		print(result)
+"""
+
+def sc_less(score):
+	score = bytes(score,'ascii')
+	cur = scDB.cursor()
+
+	result = cur.set_range(score)
+
+	print("result:",result)
+
+
 # Take set of record keys and prints them 		
 def find_results(rec_ids):
 	if (rec_ids):
@@ -79,24 +116,30 @@ def main():
 	scDB.open(scfile)
 	string = input('Enter word to search : ')
 	string = string.lower()
+	search_part(string)
 	byte = bytes(string, 'ascii')
+
+	score = input("Enter score < :")
+	sc_less(score)
+
+
 	
-	print("---------------------------------------------------------------------------------------------")
-	print("\nResults of search by review text\n")
-	rec_ids1 = search_revt(byte)
-	rec_ids = set(rec_ids1)
+	# print("---------------------------------------------------------------------------------------------")
+	# print("\nResults of search by review text\n")
+	# rec_ids1 = search_revt(byte)
+	# rec_ids = set(rec_ids1)
 
-	find_results(rec_ids1)
+	# find_results(rec_ids1)
 
-	print("---------------------------------------------------------------------------------------------")
-	print("\nResults of search by title\n")
-	rec_ids2 = search_prodt(byte)
-	rec_ids = rec_ids.union(rec_ids2)
-	find_results(rec_ids2)
+	# print("---------------------------------------------------------------------------------------------")
+	# print("\nResults of search by title\n")
+	# rec_ids2 = search_prodt(byte)
+	# rec_ids = rec_ids.union(rec_ids2)
+	# find_results(rec_ids2)
 
-	print("---------------------------------------------------------------------------------------------")
-	print("\nResult of OR title and review terms")
-	print(rec_ids)
+	# print("---------------------------------------------------------------------------------------------")
+	# print("\nResult of OR title and review terms")
+	# print(rec_ids)
 
 
 if __name__ == "__main__":
