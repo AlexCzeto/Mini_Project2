@@ -1,0 +1,5 @@
+1.Format output 
+2.Format input for Phase One into ONE LINE
+3.Format input for Phase Three into ONE Line
+4.Comment all code 
+5.Fix shh file for phase two (if you can not find out why its broken email kriti shes amazing : kriti@ualberta.ca 
