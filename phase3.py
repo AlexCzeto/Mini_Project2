@@ -3,7 +3,7 @@ from bsddb3 import db
 rwfile = 'rw.idx'
 rtfile = 'rt.idx'
 ptfile = 'pt.idx'
-#scfile = 'sc.idx' 
+scfile = 'sc.idx' 
 
 rwDB = db.DB()
 rtDB = db.DB()
@@ -131,8 +131,64 @@ def search_rdate(operator, value,rec_set):
 def search_rscore(operator, value):
 	if operator == ">":
 		print("searching rscore for values greater than " + str(value))
+		result = sc_greater(value)
 	if operator == "<":
 		print("searching rscore for values smaller than " + str(value))
+		result = sc_less(value)
+	return result
+
+# Finds all record ids that have a lower score then "score"
+# Uses set_range to finds lowest index with the same or barely greater 
+# value then the given score.
+# Move back one to find first lower score.
+# Continue moving backwards until you get "NULL" also know as the beginning the end of the index
+def sc_less(score):
+	rec_id = set()
+	print("Score : ",score)
+	score = bytes(score,'ascii')
+	cur = scDB.cursor()
+
+	result = cur.set_range(score)
+	#print("original result :",result)
+
+	result = cur.prev()
+
+	if (result == None):
+		print("No result")
+	else:
+		while(result != None):
+			rec_id.add(result[1])
+			result = cur.prev()
+	print(rec_id)
+	return(rec_id)
+
+def sc_greater(score):
+	rec_id = set()
+	score = bytes(score,'ascii')
+	cur = scDB.cursor()
+
+	# Check that there is any result bigger or equal
+
+	result = cur.set_range(score)
+#	print(result)
+
+	if(result == None):
+		print("No greater result")
+		return rec_id
+	# If score equals result, we most find the position where 
+	while(result[0]==score):
+#		print(result)
+		result = cur.next()
+		if (result == None):
+			print("No greater result")
+			return rec_id
+
+	while (result != None):
+		print(result)
+		rec_id.add(result[1])
+		result = cur.next()
+	print(rec_id)
+	return rec_id
 
 
 def merge_range_query(terms, index):
@@ -175,7 +231,7 @@ def search_query(query,rec_ids):
 
 	elif "rscore" in query:
 		operator = query[6]
-		value = int(query[7:])
+		value = query[7:]
 		results = search_rscore(operator, value)
 
 	elif "rdate" in query:
@@ -252,6 +308,8 @@ def process_query(query):
 	rec_ids = search_query(query_list[0],rec_ids)
 	query_list.pop(0)
 
+	print("rec_ids first : ",rec_ids)
+
 	for query in query_list:
 		rec_ids = rec_ids.intersection(search_query(query,rec_ids))
 		print("rec_ids : ",rec_ids)
@@ -264,7 +322,7 @@ def main():
 	rwDB.open(rwfile)
 	rtDB.open(rtfile)
 	ptDB.open(ptfile)
-#	scDB.open(scfile)
+	scDB.open(scfile)
 	string = input('Enter your search query : ')
 	process_query(string)
 
