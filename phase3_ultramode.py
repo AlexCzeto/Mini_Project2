@@ -113,7 +113,14 @@ def search_r(key):
 		else:
 			print("Search returned no result")
 	return rec_ids
-	
+def search_rscore(operator, value):
+	if operator == ">":
+		print("searching rscore for values greater than " + str(value))
+		result = sc_greater(value)
+	if operator == "<":
+		print("searching rscore for values smaller than " + str(value))
+		result = sc_less(value)
+	return result	
 	# Finds all record ids that have a lower score then "score"
 # Uses set_range to finds lowest index with the same or barely greater 
 # value then the given score.
