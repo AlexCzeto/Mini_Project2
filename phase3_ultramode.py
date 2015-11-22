@@ -1,5 +1,5 @@
 from bsddb3 import db 
-import date
+import datetime
 
 
 rwfile = 'rw.idx'
