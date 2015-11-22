@@ -1,4 +1,8 @@
 from bsddb3 import db 
+from datetime import *
+
+### pprice < 60 nun
+
 
 rwfile = 'rw.idx'
 rtfile = 'rt.idx'
@@ -23,7 +27,7 @@ def search_similar (start_b,last_b,rec_id,ind):
 
 	while(result!=last):
 		rec_id.add(result[1])
-		print(result)
+		#print(result)
 		result = cur_start.next()
 #	print("Similar terms set :",rec_id)
 	return rec_id
@@ -45,7 +49,7 @@ def search_p(key):
 	 	key = bytes(key,'ascii')
 	 	end = bytes(end,'ascii')
 	 	rec_ids = search_similar(key,end,rec_ids,ptDB)
-	 	print(rec_ids)
+		#print(rec_ids)
 	else:
 		key = bytes(key, 'ascii')
 		cur = ptDB.cursor()
@@ -68,8 +72,6 @@ def search_p(key):
 				amount = amount-1
 
 			#print(" product title set : ",rec_ids)
-		else:
-			print("Search returned no result")
 	return rec_ids
 
 
@@ -82,9 +84,6 @@ def search_r(key):
 	Input: user entered string
 	Return: set of record id's
 	"""
-	# LETS THINK ABOUT THIS LATER OKAY
-	# HAHA NEVERMIND the beautiful Alex got it all figured out
-
 	rec_ids = set()
 
 	if key.find("%") != -1:
@@ -108,43 +107,24 @@ def search_r(key):
 				#print(" a review term result : ",result)
 				amount = amount-1
 			#print("review term result set  : ",rec_ids)
-		else:
-			print("Search returned no result")
 	return rec_ids
-
-
-def search_pprice(operator, value,rec_set):
-	print("exisiting set : ", rec_set)
-	if operator == ">":
-		print("searching pprice for values greater than " + str(value))
-	
-	if operator == "<":
-		print("searching pprice for values smaller than " + str(value))
-
-def search_rdate(operator, value,rec_set):
-	print("exisiting set : ", rec_set)
-	if operator == ">":
-		print("searching rdate for values greater than " + str(value))
-	if operator == "<":
-		print("searching rdate for values smaller than " + str(value))
 
 def search_rscore(operator, value):
 	if operator == ">":
-		print("searching rscore for values greater than " + str(value))
+		#print("searching rscore for values greater than " + str(value))
 		result = sc_greater(value)
 	if operator == "<":
-		print("searching rscore for values smaller than " + str(value))
+		#print("searching rscore for values smaller than " + str(value))
 		result = sc_less(value)
-	return result
-
-# Finds all record ids that have a lower score then "score"
+	return result	
+	# Finds all record ids that have a lower score then "score"
 # Uses set_range to finds lowest index with the same or barely greater 
 # value then the given score.
 # Move back one to find first lower score.
 # Continue moving backwards until you get "NULL" also know as the beginning the end of the index
 def sc_less(score):
 	rec_id = set()
-	print("Score : ",score)
+	#print("Score : ",score)
 	score = bytes(score,'ascii')
 	cur = scDB.cursor()
 
@@ -153,14 +133,13 @@ def sc_less(score):
 
 	result = cur.prev()
 
-	if (result == None):
-		print("No result")
-	else:
+	if result != None:
 		while(result != None):
 			rec_id.add(result[1])
 			result = cur.prev()
-	print(rec_id)
+	#print(rec_id)
 	return(rec_id)
+
 
 def sc_greater(score):
 	rec_id = set()
@@ -173,35 +152,143 @@ def sc_greater(score):
 #	print(result)
 
 	if(result == None):
-		print("No greater result")
+		#print("No greater result")
 		return rec_id
 	# If score equals result, we most find the position where 
 	while(result[0]==score):
 #		print(result)
 		result = cur.next()
 		if (result == None):
-			print("No greater result")
+			#print("No greater result")
 			return rec_id
 
 	while (result != None):
-		print(result)
+		#print(result)
 		rec_id.add(result[1])
 		result = cur.next()
-	print(rec_id)
+	#print(rec_id)
 	return rec_id
 
-# Take set of record keys and prints them 		
-def find_results(rec_id):
-	if (rec_id):
-		while(rec_id):
-			key = rec_id.pop()
-			result = rwDB.get(key)
-			text = result.decode("utf-8")
-			print(text)
-			
-			print("\n\n")
+def search_pprice(operator, price, records):
+	if operator == ">":
+		#print("searching pprice for values greater than " + str(price))
+		results = set()
+
+		for record_id in records:
+			# Retrieve the record from the database
+			record = rwDB.get(record_id)
+			record = record.decode("utf-8")
+		
+			# Isolate the price
+			record = record.split('"')
+			record = record[2].split(",")
+			try:		 
+				r_price = float(record[1])
+			except ValueError:
+				r_price = -1
+
+			# Remove the record if it does not satisfy the given condition
+			if r_price > price:
+				# remove record with record_id from the set records
+				results.add(record_id)
+		return results
+
+	if operator == "<":
+		#print("searching pprice for values smaller than " + str(price))
+		results = set()
+
+		for record_id in records:
+			# Retrieve the record from the database
+			record = rwDB.get(record_id)
+			record = record.decode("utf-8")
+		
+			# Isolate the price
+			record = record.split('"')
+			record = record[2].split(",")
+			try:		 
+				r_price = float(record[1])
+			except ValueError:
+				r_price = -1
+
+			# Remove the record if it does not satisfy the given condition
+			if r_price < price:
+				# remove record with record_id from the set records
+				results.add(record_id)
+		return results
+
+
+def search_rdate(operator, value, records):
+	date = value.split("/")	
+	date = datetime.date(int(date[0]), int(date[1]), int(date[2]))
+	results = set()
+
+	if operator == ">":
+		#print("searching rdate for values greater than " + str(value))
+		for record_id in records:
+			# Retrieve the record from the database
+			record = rwDB.get(record_id)
+			record = record.decode("utf-8")
+
+			# Isolate the timestamp
+			timestamp = record.split('"')
+			timestamp = timestamp[4].split(",")
+			timestamp = timestamp[3]
+			record_date = date.fromtimestamp(int(timestamp))
+
+			# Compare, remove if necessary
+			if record_date > date:
+				results.add(record_id)
+		return results
+
+	if operator == "<":
+		#print("searching rdate for values smaller than " + str(value))
+		for record_id in records:
+			# Retrieve the record from the database
+			record = rwDB.get(record_id)
+			record = record.decode("utf-8")
+
+			# Isolate the timestamp
+			timestamp = record.split('"')
+			timestamp = timestamp[4].split(",")
+			timestamp = timestamp[3]
+			record_date = date.fromtimestamp(int(timestamp))
+
+			# Compare, remove if necessary
+			if record_date < date:
+				results.add(record_id)
+		return results
+	
+	
+
+def search_query(query, rec_ids):
+	if "pprice" in query:
+		operator = query[6]
+		value = int(query[7:])
+		results = search_pprice(operator, value, rec_ids)
+
+	elif "rscore" in query:
+		operator = query[6]
+		value = query[7:]
+		results = search_rscore(operator, value)
+
+	elif "rdate" in query:
+		operator = query[5]
+		value = query[6:]
+		results = search_rdate(operator, value, rec_ids)
+
+	# SEARCHING FOR TERMS:
+	elif query.find(":") != -1: 
+		query = query.split(":")
+		if query[0] == 'p':
+			results = search_p(query[1])
+		elif query[0] == 'r':
+			results = search_r(query[1])
 	else:
-		print("No result")	
+		results = search_r(query)
+		results = results.union(search_p(query))
+
+
+	return results
 
 
 def merge_range_query(terms, index):
@@ -234,41 +321,6 @@ def merge_range_query(terms, index):
 
 	return terms
 
-def search_query(query,rec_ids):
-	#print("Current query : ",query)
-
-	if "pprice" in query:
-		operator = query[6]
-		value = int(query[7:])
-		results = search_pprice(operator, value,rec_ids)
-
-	elif "rscore" in query:
-		operator = query[6]
-		value = query[7:]
-		results = search_rscore(operator, value)
-
-	elif "rdate" in query:
-		operator = query[5]
-		value = query[6:]
-		results = search_rdate(operator, value,rec_ids)
-
-	# SEARCHING FOR TERMS:
-	elif query.find(":") != -1: 
-		query = query.split(":")
-		if query[0] == 'p':
-			results = search_p(query[1])
-		elif query[0] == 'r':
-			results = search_r(query[1])
-	else:
-		
-		results = search_r(query)
-		print("result set after review terms :",results)
-		results = results.union(search_p(query))
-		print("result set after title terms :",results)
-
-
-	return results
-
 
 def process_query(query):
 	# queries converted to lowercase
@@ -284,50 +336,79 @@ def process_query(query):
 	# them into one element if necessary:
 	for i in range(len(query_list)-1):
 		if query_list[i].find("pprice") != -1:
-			merge_range_query(query_list, i, 1)
+			merge_range_query(query_list, i)
 		if query_list[i].find("rscore") != -1:
-			merge_range_query(query_list, i, 0)
+			merge_range_query(query_list, i)
 		if query_list[i].find("rdate") != -1:
-			merge_range_query(query_list, i, 1)
+			merge_range_query(query_list, i)
 
 	# Get rid of the extra spaces generated in the merge functions
 	query_list = [x for x in query_list if x != " "]
 
-	# So, now that we have all of everything formatted uniformly,
-	# We can do all our searches
+	# Reorder the list so that
+	# searches on pprice, rscore, and rdate do not appear first
+	
+	for i in range(len(query_list)):
+		query = query_list[i]
+		if ("pprice" not in query) & ("rscore" not in query) & ("rdate" not in query) :
+ 			# switch this term with term 0 in the list
+ 			query_list[0], query_list[i] = query_list[i], query_list[0]
 
-	# Hang on, technically, we don't quite want to do our searches yet
-	# because the conditions on rscore, pprice and rdate can only be used if
-	# condition on review/product terms or review scores is also present.
 
-	# so the best thing to do would be to order our list, with the 
-	# search_p, search_r being done first
-
-	# I think?
-
-	# okay this needs to be recursive haha. Like we'll send the results of the first thing
-	# to the second thing. We would need to keep pipelining it through I think. 
-	# Which means more reading I think. 
-
-	# Um. For now though?
-
-	# Just leave it?
-
-	# Well. At the very least start with having one 'dependant' query.
-	# I have no idea how they work. More reading is where it's at.
-
-	rec_ids = set()	# This will contain the search results AS A SET
-	# Union of result set and search result for a given record collets all possible results and
-	rec_ids = search_query(query_list[0],rec_ids)
+ 	# rec_ids will be our set of results
+	search_results = set()	
+	
+	# set the first search result to the empty set
+	search_results = search_query(query_list[0], search_results)
 	query_list.pop(0)
 
-	print("rec_ids first : ",rec_ids)
 
+
+	# for every following query, intersect the old search and new search
 	for query in query_list:
-		rec_ids = rec_ids.intersection(search_query(query,rec_ids))
-		print("rec_ids : ",rec_ids)
-	print("final : ",rec_ids)
+		search_results = search_results.intersection(search_query(query, search_results))
+		
 
+	return(search_results)
+
+def print_results(search_results):
+	"""
+	Takes a set of records and prints them for display
+
+	Each query returns the full record of the matching review,
+	with review id given first, followed by the rest of the fields 
+	formatted for output display, in some readable format. 
+
+	each review record consists of a product id, a product title, 
+	a product price, userid and profile name of the reviewer, helpfulness
+	of the review, review score, review timestamp, summary and full text 
+	of the review,
+	"""
+	for result in search_results:
+		result = rwDB.get(result)
+		text = result.decode("utf-8")
+		text = text.split('"')
+		time = int(text[4].split(",")[3])
+		time = date.fromtimestamp(time)
+
+		# The only thing is the &quot which we have to change back
+		# into actual quotes, for the title, name, summary, and text fields
+		review_title =  text[1].replace('&quot', '"')
+		profile_name = text[3].replace('&quot', '"')
+		summary =  text[5].replace('&quot', '"')
+		review_text = text[7].replace('&quot', '"')
+
+		print("review id: " + text[0].strip(","))
+		print("review title: " + review_title)
+		print("Price: " + text[2].split(",")[1])
+		print("Userid: " + text[2].split(",")[2] )
+		print("Profile Name of reviewer: " + profile_name)
+		print("Review Helpfulness: " +text[4].split(",")[1])
+		print("Review Score: " + text[4].split(",")[2])
+		print("Review Timestamp: " + str(time))
+		print("Review Summary: " + summary)
+		print("Review Text: " + review_text)
+		print("\n")
 
 
 def main():
@@ -337,26 +418,8 @@ def main():
 	ptDB.open(ptfile)
 	scDB.open(scfile)
 	string = input('Enter your search query : ')
-	process_query(string)
-
-	# print("---------------------------------------------------------------------------------------------")
-	# print("\nResults of search by review text\n")
-	# rec_ids1 = search_r(byte)
-	# rec_ids = set(rec_ids1)
-	
-
-	# #find_results(rec_ids1)
-	# print("---------------------------------------------------------------------------------------------")
-	# print("\nResults of search by title\n")
-	# rec_ids2 = search_p(byte)
-	# rec_ids = rec_ids.union(rec_ids2)
-	# #find_results(rec_ids2)
-
-	# print("---------------------------------------------------------------------------------------------")
-	# print("\nResult of OR title and review terms")
-	# print(rec_ids)
-
+	results=process_query(string)
+	print_results(results)
 
 if __name__ == "__main__":
 	main()
-
