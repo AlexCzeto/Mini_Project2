@@ -190,6 +190,19 @@ def sc_greater(score):
 	print(rec_id)
 	return rec_id
 
+# Take set of record keys and prints them 		
+def find_results(rec_id):
+	if (rec_id):
+		while(rec_id):
+			key = rec_id.pop()
+			result = rwDB.get(key)
+			text = result.decode("utf-8")
+			print(text)
+			
+			print("\n\n")
+	else:
+		print("No result")	
+
 
 def merge_range_query(terms, index):
 	"""
