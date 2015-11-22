@@ -366,7 +366,6 @@ def process_query(query):
  			# switch this term with term 0 in the list
  			query_list[0], query_list[i] = query_list[i], query_list[0]
  			
- 	print(query_list)
 
 
  	# rec_ids will be our set of results
