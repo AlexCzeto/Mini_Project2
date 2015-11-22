@@ -365,6 +365,8 @@ def process_query(query):
 		if ("pprice" not in query) & ("rscore" not in query) & ("rdate" not in query) :
  			# switch this term with term 0 in the list
  			query_list[0], query_list[i] = query_list[i], query_list[0]
+ 			
+ 	print(query_list)
 
 
  	# rec_ids will be our set of results
